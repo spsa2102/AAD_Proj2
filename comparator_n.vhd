@@ -35,15 +35,35 @@ entity comparator_n is
   );
 end comparator_n;
 
-architecture behavioral of comparator_n is
-  signal s_lt : std_logic;
-  signal s_eq : std_logic;
-  signal s_gt : std_logic;
+architecture structural of comparator_n is
+  signal c_lt : std_logic_vector(0 to N);
+  signal c_eq : std_logic_vector(0 to N);
+  signal c_gt : std_logic_vector(0 to N);
 begin
-  s_lt <= '1' when unsigned(a) < unsigned(b) else '0';
-  s_eq <= '1' when          a  =          b  else '0';
-  s_gt <= '1' when unsigned(a) > unsigned(b) else '0';
-  lt <= transport s_lt after (10+2*N)*ps;
-  eq <= transport s_eq after (10    )*ps; -- smaller time penalty because comparison for equality is simpler
-  gt <= transport s_gt after (10+2*N)*ps;
-end behavioral;
+  c_lt(0) <= '0';
+  c_eq(0) <= '1';
+  c_gt(0) <= '0';
+  chain_gen: for i in 0 to N-1 generate
+    process(a(i), b(i), c_lt(i), c_eq(i), c_gt(i))
+    begin
+      if a(i) = b(i) then
+        c_lt(i+1) <= c_lt(i);
+        c_eq(i+1) <= c_eq(i);
+        c_gt(i+1) <= c_gt(i);
+      elsif a(i) = '1' then 
+        c_lt(i+1) <= '0';
+        c_eq(i+1) <= '0';
+        c_gt(i+1) <= '1';
+      else 
+        c_lt(i+1) <= '1';
+        c_eq(i+1) <= '0';
+        c_gt(i+1) <= '0';
+      end if;
+    end process;
+  end generate;
+
+  lt <= transport c_lt(N) after 5 ps * N;
+  eq <= transport c_eq(N) after 5 ps * N;
+  gt <= transport c_gt(N) after 5 ps * N;
+
+end structural;

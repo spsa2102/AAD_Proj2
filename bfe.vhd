@@ -22,6 +22,8 @@ entity bfe is
 end bfe;
 
 architecture structural of bfe is
+  constant N_BITS : integer := 2**DATA_BITS_LOG2;
+
   -- internal signals
   signal shifted_src     : std_logic_vector(2**DATA_BITS_LOG2-1 downto 0);
   signal msfb_mask       : std_logic_vector(2**DATA_BITS_LOG2-1 downto 0);
@@ -41,11 +43,11 @@ begin
       data_in  => src,
       data_out => shifted_src,
       shift    => start,
-      missing  => '0'  -- logical shift (fill with zeros)
+      missing  => variant
     );
 
   mask_gen : for i in 0 to 2**DATA_BITS_LOG2-1 generate
-    comp : entity work.comparator_n(behavioral)
+    comp : entity work.comparator_n(structural)
       generic map
       (
         N => DATA_BITS_LOG2
@@ -67,7 +69,7 @@ begin
   zero_extended <= shifted_src and not mask;
 
   sign_ext_gen : for i in 0 to 2**DATA_BITS_LOG2-1 generate
-    sign_extended(i) <= (shifted_src(i) and not mask(i)) or (msb_bit and mask(i));
+    sign_extended(i) <= shifted_src(i) when mask(i) = '0' else msb_bit;
   end generate;
 
   dst <= sign_extended when variant = '1' else zero_extended;
