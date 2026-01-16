@@ -38,27 +38,74 @@ static const char *to_binary(unsigned long n,int bits)
   return (const char *)s;
 }
 
+// static void do_one(unsigned long src,int size,int start)
+// {
+//   unsigned long dst0,dst1;
+
+// #if missing_bits_behaviour == 0
+//   // zero extend the n_bits register
+//   src = src << (64 - n_bits);
+//   src = src >> (64 - n_bits);
+// #else
+//   // sign-extend the n_bits register
+//   src = src << (64 - n_bits);
+//   src = (unsigned long)((signed long)src >> (64 - n_bits));
+// #endif
+//   // extract and zero extend the bit-field
+//   dst0 = src >> start;
+//   dst0 = dst0 << (63 - size);
+//   dst0 = dst0 >> (63 - size);
+//   // extract and sign extend the bit-field
+//   dst1 = src >> start;
+//   dst1 = dst1 << (63 - size);
+//   dst1 = (unsigned long)((signed long)dst1 >> (63 - size));
+//   // output test data
+//   printf(
+//     "    --- new test case"                                                       "\n"
+//     "    s_src      <= \"%s\";"                                                   "\n"
+//     "    s_size     <= \"%s\"; -- %d"                                             "\n"
+//     "    s_start    <= \"%s\"; -- %d"                                             "\n"
+//     "    s_variant  <= '0';"                                                      "\n"
+//     "    s_expected <= \"%s\";"                                                   "\n"
+//     "    wait for 499 ps;"                                                        "\n"
+//     "    assert s_dst = s_expected report \"bad dst\" severity note;"             "\n"
+//     "    wait for 1 ps;"                                                          "\n"
+//     "    s_variant  <= '1';"                                                      "\n"
+//     "    s_expected <= \"%s\";"                                                   "\n"
+//     "    wait for 499 ps;"                                                        "\n"
+//     "    assert s_dst = s_expected report \"bad dst\" severity note;"             "\n"
+//     "    wait for 1 ps;"                                                          "\n",
+//     to_binary(src,n_bits),
+//     to_binary(size,n_bits_log2),size,
+//     to_binary(start,n_bits_log2),start,
+//     to_binary(dst0,n_bits),
+//     to_binary(dst1,n_bits)
+//   );
+// }
+
 static void do_one(unsigned long src,int size,int start)
 {
-  unsigned long dst0,dst1;
+  unsigned long dst0, dst1;
+  unsigned long src_u, src_s;
 
-#if missing_bits_behaviour == 0
-  // zero extend the n_bits register
-  src = src << (64 - n_bits);
-  src = src >> (64 - n_bits);
-#else
-  // sign-extend the n_bits register
-  src = src << (64 - n_bits);
-  src = (unsigned long)((signed long)src >> (64 - n_bits));
-#endif
-  // extract and zero extend the bit-field
-  dst0 = src >> start;
+  // Preparar versão com Zero-Extend
+  src_u = src << (64 - n_bits);
+  src_u = src_u >> (64 - n_bits);
+
+  // Preparar versão com Sign-Extend (para variante)
+  src_s = src << (64 - n_bits);
+  src_s = (unsigned long)((signed long)src_s >> (64 - n_bits));
+
+  // Variante .u (usa src_u - missing bits a 0)
+  dst0 = src_u >> start;
   dst0 = dst0 << (63 - size);
   dst0 = dst0 >> (63 - size);
-  // extract and sign extend the bit-field
-  dst1 = src >> start;
+
+  // Variante .s (usa src_s - missing bits = MSB)
+  dst1 = src_s >> start;
   dst1 = dst1 << (63 - size);
   dst1 = (unsigned long)((signed long)dst1 >> (63 - size));
+
   // output test data
   printf(
     "    --- new test case"                                                       "\n"
